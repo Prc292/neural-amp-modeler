@@ -485,27 +485,27 @@ def _get_wavenet_config(architecture):
     return {
         Architecture.STANDARD: {
             "layers_configs": [
-                {
-                    "input_size": 1,
+                   {
                     "condition_size": 1,
-                    "channels": 16,
-                    "head_size": 8,
-                    "kernel_size": 3,
-                    "dilations": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
-                    "activation": "Tanh",
+                    "input_size": 1,
+                    "channels": 7, # These can be much lower compared to using Tanh
+                    "head_size": 5, # These can be much lower compared to using Tanh 
+                    "kernel_size": 7, # Larger amount of kernels is key
+                    "dilations": [1,2,4,8,16,32,64,128,256,512],
+                    "activation": "ReLU", # was Tanh
                     "gated": False,
-                    "head_bias": False,
+                    "head_bias": False
                 },
                 {
                     "condition_size": 1,
-                    "input_size": 16,
-                    "channels": 8,
+                    "input_size": 7, # These can be much lower compared to using Tanh
+                    "channels": 5, # These can be much lower compared to using Tanh
                     "head_size": 1,
-                    "kernel_size": 3,
-                    "dilations": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
-                    "activation": "Tanh",
+                    "kernel_size": 7, # Larger amount of kernels is key
+                    "dilations": [1,2,4,8,16,32,64,128,256,512],
+                    "activation": "ReLU", # was Tanh
                     "gated": False,
-                    "head_bias": True,
+                    "head_bias": True
                 },
             ],
             "head_scale": 0.02,
@@ -633,15 +633,17 @@ def _get_configs(
                 "name": "LSTM",
                 "config": _get_lstm_config(architecture),
             },
-            "loss": {
-                "val_loss": "mse",
-                "mask_first": 4096,
-                "pre_emph_weight": 1.0,
-                "pre_emph_coef": 0.85,
-            },
-            "optimizer": {"lr": 0.01},
-            "lr_scheduler": {"class": "ExponentialLR", "kwargs": {"gamma": 0.995}},
-        }
+             "loss": {
+        "val_loss": "esr"
+    },
+    "optimizer": {
+        "lr": 0.004
+    },
+    "lr_scheduler": {
+        "class": "ExponentialLR",
+        "kwargs": {"gamma": 1.0 }
+        },
+    }
     if fit_cab:
         model_config["loss"]["pre_emph_mrstft_weight"] = _CAB_MRSTFT_PRE_EMPH_WEIGHT
         model_config["loss"]["pre_emph_mrstft_coef"] = _CAB_MRSTFT_PRE_EMPH_COEF
@@ -655,14 +657,17 @@ def _get_configs(
         device_config = {}
     learning_config = {
         "train_dataloader": {
-            "batch_size": batch_size,
+            "batch_size": 8,
             "shuffle": True,
             "pin_memory": True,
             "drop_last": True,
-            "num_workers": 0,
+            "num_workers": 8,
         },
         "val_dataloader": {},
-        "trainer": {"max_epochs": epochs, **device_config},
+    "trainer": {
+        "accelerator": "gpu", 
+        "devices": 1,
+        "max_epochs": 500
     }
     return data_config, model_config, learning_config
 
